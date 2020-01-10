@@ -41,11 +41,12 @@ void AccelStepper::move(long relative)
 boolean AccelStepper::runSpeed()
 {
     // Dont do anything unless we actually have a step interval
-    if (!_stepInterval)
+    if (!_stepInterval){
+	_substep_accumulator = 0;
 	return false;
+    }
 
-    unsigned long time = micros();   
-    if (time - _lastStepTime >= _stepInterval)
+    if ((_substep_accumulator += _substep_increment) >= _stepInterval)
     {
 	if (_direction == DIRECTION_CW)
 	{
@@ -59,7 +60,7 @@ boolean AccelStepper::runSpeed()
 	}
 	step(_currentPos);
 
-	_lastStepTime = time; // Caution: does not account for costs in step()
+    _substep_accumulator -= _stepInterval;
 
 	return true;
     }
@@ -98,7 +99,7 @@ void AccelStepper::computeNewSpeed()
 {
     long distanceTo = distanceToGo(); // +ve is clockwise from curent location
 
-    long stepsToStop = (long)((_speed * _speed) / (2.0 * _acceleration)); // Equation 16
+    long stepsToStop = (long)((_speed * _speed) / (2.0 * _deceleration)); // Equation 16
 
     if (distanceTo == 0 && stepsToStop <= 1)
     {
@@ -195,11 +196,13 @@ AccelStepper::AccelStepper(uint8_t interface, uint8_t pin1, uint8_t pin2, uint8_
     _speed = 0.0;
     _maxSpeed = 1.0;
     _acceleration = 0.0;
+    _deceleration = 0.0;
     _sqrt_twoa = 1.0;
     _stepInterval = 0;
     _minPulseWidth = 1;
     _enablePin = 0xff;
-    _lastStepTime = 0;
+    _substep_increment = 20; // (1000 / TIMER_FREQ_KHZ)
+    _substep_accumulator = 0;
     _pin[0] = pin1;
     _pin[1] = pin2;
     _pin[2] = pin3;
@@ -212,7 +215,7 @@ AccelStepper::AccelStepper(uint8_t interface, uint8_t pin1, uint8_t pin2, uint8_
     _cn = 0.0;
     _cmin = 1.0;
     _direction = DIRECTION_CCW;
-
+    _prev_direction = DIRECTION_CW;
     int i;
     for (i = 0; i < 4; i++)
 	_pinInverted[i] = 0;
@@ -220,6 +223,7 @@ AccelStepper::AccelStepper(uint8_t interface, uint8_t pin1, uint8_t pin2, uint8_
 	enableOutputs();
     // Some reasonable default
     setAcceleration(1);
+    setDeceleration(1);
 }
 
 AccelStepper::AccelStepper(void (*forward)(), void (*backward)())
@@ -230,11 +234,13 @@ AccelStepper::AccelStepper(void (*forward)(), void (*backward)())
     _speed = 0.0;
     _maxSpeed = 1.0;
     _acceleration = 0.0;
+    _deceleration = 0.0;
     _sqrt_twoa = 1.0;
     _stepInterval = 0;
     _minPulseWidth = 1;
     _enablePin = 0xff;
-    _lastStepTime = 0;
+    _substep_increment = 20; // (1000 / TIMER_FREQ_KHZ)
+    _substep_accumulator = 0;
     _pin[0] = 0;
     _pin[1] = 0;
     _pin[2] = 0;
@@ -248,12 +254,13 @@ AccelStepper::AccelStepper(void (*forward)(), void (*backward)())
     _cn = 0.0;
     _cmin = 1.0;
     _direction = DIRECTION_CCW;
-
+    _prev_direction = _direction;
     int i;
     for (i = 0; i < 4; i++)
 	_pinInverted[i] = 0;
     // Some reasonable default
     setAcceleration(1);
+    setDeceleration(1);
 }
 
 void AccelStepper::setMaxSpeed(float speed)
@@ -293,6 +300,19 @@ void AccelStepper::setAcceleration(float acceleration)
 	_acceleration = acceleration;
 	computeNewSpeed();
     }
+}
+
+void AccelStepper::setDeceleration(float deceleration)
+{
+	if (deceleration == 0.0)
+		return;
+	if (deceleration < 0.0)
+		deceleration = -deceleration;
+	if (_deceleration != deceleration) 
+    {
+		_deceleration = deceleration;
+		computeNewSpeed();
+	}
 }
 
 void AccelStepper::setSpeed(float speed)
@@ -638,7 +658,7 @@ void AccelStepper::stop()
 {
     if (_speed != 0.0)
     {    
-	long stepsToStop = (long)((_speed * _speed) / (2.0 * _acceleration)) + 1; // Equation 16 (+integer rounding)
+	long stepsToStop = (long)((_speed * _speed) / (2.0 * _deceleration)) + 1; // Equation 16 (+integer rounding)
 	if (_speed > 0)
 	    move(stepsToStop);
 	else

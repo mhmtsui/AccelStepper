@@ -410,6 +410,7 @@ public:
     /// per second. Must be > 0.0. This is an expensive call since it requires a square 
     /// root to be calculated. Dont call more ofthen than needed
     void    setAcceleration(float acceleration);
+    void    setDeceleration(float deceleration);
 
     /// Sets the desired constant speed for use with runSpeed().
     /// \param[in] speed The desired constant speed in steps per
@@ -598,7 +599,8 @@ protected:
     /// Current direction motor is spinning in
     /// Protected because some peoples subclasses need it to be so
     boolean _direction; // 1 == CW
-    
+    boolean _prev_direction;
+        
 private:
     /// Number of pins on the stepper motor. Permits 2 or 4. 2 pins is a
     /// bipolar, and 4 pins is a unipolar.
@@ -629,14 +631,15 @@ private:
     /// The acceleration to use to accelerate or decelerate the motor in steps
     /// per second per second. Must be > 0
     float          _acceleration;
+    float          _deceleration;
     float          _sqrt_twoa; // Precomputed sqrt(2*_acceleration)
 
     /// The current interval between steps in microseconds.
     /// 0 means the motor is currently stopped with _speed == 0
     unsigned long  _stepInterval;
 
-    /// The last step time in microseconds
-    unsigned long  _lastStepTime;
+    unsigned long  _substep_increment;
+    unsigned long  _substep_accumulator;
 
     /// The minimum allowed pulse width in microseconds
     unsigned int   _minPulseWidth;

@@ -7,8 +7,10 @@ static uint8_t stepper_list_num = 0;
 
 static bool timer_has_init = false;
 static volatile bool timer_started = false;
+static volatile bool timer_needstart = false;
 
 void timer_start(void) {
+	timer_needstart = true;
 	if (!timer_started) {
 		setIntEnable(_TIMER_4_IRQ);
 		T4CONbits.TON = 1;
@@ -44,19 +46,20 @@ void __USER_ISR timer_isr(void) {
 			}
 		}
 	}
-	if (cnt == 0) {
+	if (cnt == 0 && !(timer_needstart)) {
 		// timer_stop();
 		timer_started = false;
 		IEC0CLR = _IEC0_T4IE_MASK;
 		T4CONbits.TON = 0;
 	}
+	timer_needstart = false;
 	// _LATB14 = 0;
 }
 
 void timer_init(void) {
 	T4CONbits.TCKPS = 5;
 	setIntVector(_TIMER_4_VECTOR, timer_isr);
-	setIntPriority(_TIMER_4_VECTOR, 5, 3);
+	setIntPriority(_TIMER_4_VECTOR, 6, 3);
 	clearIntFlag(_TIMER_4_IRQ);
 	clearIntEnable(_TIMER_4_IRQ);
 	PR4 = PR;
@@ -114,13 +117,16 @@ bool AccelStepperT::isTimerActive(void) {
 
 void AccelStepperT::step(long step) {
 	(void)step;
-
 	if (_direction) {
 		iopDir->lat.set = bitDir;
 	} else {
 		iopDir->lat.clr = bitDir;
 	}
-
+	asm volatile("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n ");
+	if (_prev_direction != _direction){
+		delayMicroseconds(5);
+	}
+	_prev_direction = _direction;
 	iopStep->lat.set = bitStep;
 	delayMicroseconds(5);
 	iopStep->lat.clr = bitStep;
