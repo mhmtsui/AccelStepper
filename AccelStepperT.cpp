@@ -1,6 +1,10 @@
 #include "AccelStepperT.h"
 
-#define PR (uint16_t)(3125UL / TIMER_FREQ_KHZ)
+#ifdef defined (__PIC32MX3XX__)
+	#define PR (uint16_t)(2500UL / TIMER_FREQ_KHZ)
+#elif defined (__PIC32MZXX__)
+	#define PR (uint16_t)(3125UL / TIMER_FREQ_KHZ)
+#endif
 
 static AccelStepperT *stepper_list[MAX_STEPPER_NUM];
 static uint8_t stepper_list_num = 0;
