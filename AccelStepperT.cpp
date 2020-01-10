@@ -1,6 +1,6 @@
 #include "AccelStepperT.h"
 
-#define PR (uint16_t)(2500UL / TIMER_FREQ_KHZ)
+#define PR (uint16_t)(3125UL / TIMER_FREQ_KHZ)
 
 static AccelStepperT *stepper_list[MAX_STEPPER_NUM];
 static uint8_t stepper_list_num = 0;
@@ -25,7 +25,7 @@ void timer_stop(void) {
 	timer_started = false;
 }
 
-void __USER_ISR timer_isr(void) {
+void __attribute__((nomips16,at_vector(_TIMER_4_VECTOR),interrupt(IPL4SRS))) timer_isr(void) {
 	IFS0CLR = _IFS0_T4IF_MASK;
 	// clearIntFlag(_TIMER_4_IRQ);
 	// _LATB14 = 1;
@@ -44,7 +44,19 @@ void __USER_ISR timer_isr(void) {
 			} else {
 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
 			}
-		}
+		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_F) {
+			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeF))) {
+				cnt++;
+			} else {
+				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
+			}
+		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_R) {
+			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeR))) {
+				cnt++;
+			} else {
+				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
+			}
+		} 
 	}
 	if (cnt == 0 && !(timer_needstart)) {
 		// timer_stop();
@@ -59,12 +71,10 @@ void __USER_ISR timer_isr(void) {
 void timer_init(void) {
 	T4CONbits.TCKPS = 5;
 	setIntVector(_TIMER_4_VECTOR, timer_isr);
-	setIntPriority(_TIMER_4_VECTOR, 6, 3);
+	setIntPriority(_TIMER_4_VECTOR, 7, 1);
 	clearIntFlag(_TIMER_4_IRQ);
 	clearIntEnable(_TIMER_4_IRQ);
 	PR4 = PR;
-
-	// pinMode(19, OUTPUT);
 }
 
 AccelStepperT::AccelStepperT(uint8_t step, uint8_t dir) : AccelStepper(AccelStepper::DRIVER, step, dir, 255, 255) {
@@ -130,4 +140,142 @@ void AccelStepperT::step(long step) {
 	iopStep->lat.set = bitStep;
 	delayMicroseconds(5);
 	iopStep->lat.clr = bitStep;
+}
+
+void AccelStepperT::startHome(_async_hometype mode) {
+	if (mode == HOME_F){
+		home = HOME_START;
+		_async_runtype = T_HOME_F;
+		timer_start();
+	}else if (mode == HOME_R){
+		home = HOME_START;
+		_async_runtype = T_HOME_R;
+		timer_start();
+	}
+}
+
+uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
+	home_struct->current = ((((home_struct->current & 0x07) << 1) & 0x0E) | ((digitalRead(home_struct->pin)) & 0x01));
+	//Serial.println(home_struct->current);
+	if (home == HOME_START){
+		if (home_struct->invert == false){//active 1
+			if (!(home_struct->current & 0x01)){
+				home = HOME_TOWARD;
+				if (speed() != home_struct->toward_move){
+					setSpeed(home_struct->toward_move);
+				}
+				runSpeed();
+				return 1;
+			}else{
+				home = HOME_AWAY;
+				if (speed() != home_struct->leave_move){
+					setSpeed(home_struct->leave_move);
+				}
+				runSpeed();
+				return 1;
+			}
+		}else if (home_struct->invert == true){//active 0
+			if (home_struct->current & 0x01){
+				home = HOME_TOWARD;
+				if (speed() != home_struct->toward_move){
+					setSpeed(home_struct->toward_move);
+				}
+				runSpeed();
+				return 1;
+			}else{
+				home = HOME_AWAY;
+				if (speed() != home_struct->leave_move){
+					setSpeed(home_struct->leave_move);
+				}
+				runSpeed();
+				return 1;
+			}
+		}
+	}else if (home == HOME_TOWARD){
+		if (home_struct->invert == false){//active 1
+			if (((home_struct->current) & 0x0F) != 0x0F){
+				home = HOME_TOWARD;
+				if (speed() != home_struct->toward_move){
+					setSpeed(home_struct->toward_move);
+				}
+				runSpeed();
+				return 1;
+			}else{
+				setSpeed(0.0f);
+				_async_runtype = T_STOP;
+				setCurrentPosition(home_struct->position);
+				home = HOME_DONE;
+			}
+		}else if (home_struct->invert == true){//active 0
+			if ((home_struct->current) & 0x0F){
+				home = HOME_TOWARD;
+				if (speed() != home_struct->toward_move){
+					setSpeed(home_struct->toward_move);
+				}
+				runSpeed();
+				return 1;
+			}else{
+				setSpeed(0.0f);
+				_async_runtype = T_STOP;
+				setCurrentPosition(home_struct->position);
+				home = HOME_DONE;
+			}
+		}
+	}else if (home == HOME_AWAY){
+		if (home_struct->invert == false){//active 1
+			if (((home_struct->current) & 0x0F) != 0x00){
+				home = HOME_AWAY;
+				if (speed() != home_struct->leave_move){
+					setSpeed(home_struct->leave_move);
+				}
+				runSpeed();
+				return 1;
+			}else{
+				home = HOME_TOWARD;
+				return 1;
+			}
+		}else if (home_struct->invert == true){//active 0
+			if (((home_struct->current) & 0x0F) != 0x0F){
+				home = HOME_AWAY;
+				if (speed() != home_struct->leave_move){
+					setSpeed(home_struct->leave_move);
+				}
+				runSpeed();
+				return 1;
+			}else{
+				home = HOME_TOWARD;
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_move, float leave_move, bool invert, uint32_t position) {
+	if (mode == HOME_F){//Home F
+		uint8_t port;
+		if ((pin >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(pin)) == NOT_A_PIN)) {
+			return false;
+		}
+		HomeF.pin = pin;
+		HomeF.toward_move = toward_move;
+		HomeF.leave_move = leave_move;
+		HomeF.invert = invert;
+		HomeF.position = position;
+	}else if (mode == HOME_R){//Home R
+		uint8_t port;
+		if ((pin >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(pin)) == NOT_A_PIN)) {
+			return false;
+		}
+		HomeR.pin = pin;
+		HomeR.toward_move = toward_move;
+		HomeR.leave_move = leave_move;
+		HomeR.invert = invert;
+		HomeR.position = position;
+	}
+	return true;
+}
+
+_async_homestate_t AccelStepperT::Homestatus(){
+	return home;
 }
