@@ -68,4 +68,6 @@ class AccelStepperT : public AccelStepper {
 	home_struct_t HomeR;
 };
 
+extern AccelStepperT *stepper_list[MAX_STEPPER_NUM];
+
 #endif

@@ -1,12 +1,15 @@
+#include <cpudefs.h>
 #include "AccelStepperT.h"
 
 #ifdef defined (__PIC32MX3XX__)
 	#define PR (uint16_t)(2500UL / TIMER_FREQ_KHZ)
 #elif defined (__PIC32MZXX__)
 	#define PR (uint16_t)(3125UL / TIMER_FREQ_KHZ)
+#else
+	#define PR (uint16_t)(2500UL / TIMER_FREQ_KHZ)
 #endif
 
-static AccelStepperT *stepper_list[MAX_STEPPER_NUM];
+AccelStepperT *stepper_list[MAX_STEPPER_NUM];
 static uint8_t stepper_list_num = 0;
 
 static bool timer_has_init = false;
@@ -29,7 +32,13 @@ void timer_stop(void) {
 	timer_started = false;
 }
 
+#if defined (__PIC32MX3XX__)
+void __attribute__((USER_ISR)) timer_isr(void) {
+#elif defined (__PIC32MZXX__)
 void __attribute__((nomips16,at_vector(_TIMER_4_VECTOR),interrupt(IPL4SRS))) timer_isr(void) {
+#else
+void __attribute__((USER_ISR)) timer_isr(void) {
+#endif
 	IFS0CLR = _IFS0_T4IF_MASK;
 	// clearIntFlag(_TIMER_4_IRQ);
 	// _LATB14 = 1;
