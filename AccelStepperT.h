@@ -3,7 +3,7 @@
 
 #include "AccelStepper.h"
 
-#define MAX_STEPPER_NUM 8
+#define MAX_STEPPER_NUM 12
 #define TIMER_FREQ_KHZ (50)
 
 typedef enum {
