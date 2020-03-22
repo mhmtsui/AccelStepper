@@ -392,6 +392,12 @@ public:
     /// \return true if the motor was stepped.
     boolean runSpeed();
 
+    /// Poll the motor and step it if a step is due, implementing a constant
+    /// speed as set by the most recent call to setTargetSpeed(). You must call this as
+    /// frequently as possible, but at least once per step interval,
+    /// \return true if the motor was stepped.
+    boolean runSpeedwithAcceleration();
+
     /// Sets the maximum permitted speed. The run() function will accelerate
     /// up to the speed set by this function.
     /// Caution: the maximum speed achievable depends on your processor and clock speed.
@@ -423,6 +429,12 @@ public:
     /// The most recently set speed
     /// \return the most recent speed in steps per second
     float   speed();
+
+    /// The target set speed
+    float   targetSpeed();
+
+    /// Set target running speed
+    void    setTargetSpeed(float targetSpeed);
 
     /// The distance from the current position to the target position.
     /// \return the distance from the current position to the target position
@@ -535,6 +547,8 @@ protected:
     /// move() or moveTo()
     void           computeNewSpeed();
 
+    void           computeNewSpeedT();
+
     /// Low level function to set the motor output pins
     /// bit 0 of the mask corresponds to _pin[0]
     /// bit 1 of the mask corresponds to _pin[1]
@@ -627,6 +641,9 @@ private:
 
     /// The maximum permitted speed in steps per second. Must be > 0.
     float          _maxSpeed;
+
+    /// The target speed
+    float          _targetSpeed;    // Steps per second
 
     /// The acceleration to use to accelerate or decelerate the motor in steps
     /// per second per second. Must be > 0

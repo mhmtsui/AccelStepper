@@ -57,6 +57,13 @@ void __attribute__((USER_ISR)) timer_isr(void) {
 			} else {
 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
 			}
+		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUNSPEEDACCEL) {
+			if (stepper_list[i]->targetSpeed() != 0.0) {
+				stepper_list[i]->runSpeedwithAcceleration();
+				cnt++;
+			} else {
+				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
+			}
 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_F) {
 			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeF))) {
 				cnt++;
@@ -120,6 +127,11 @@ void AccelStepperT::runAsync(void) {
 
 void AccelStepperT::runSpeedAsync(void) {
 	_async_runtype = T_RUNSPEED;
+	timer_start();
+}
+
+void AccelStepperT::runSpeedwithAccelerationAsync(void) {
+	_async_runtype = T_RUNSPEEDACCEL;
 	timer_start();
 }
 

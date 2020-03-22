@@ -36,6 +36,7 @@ class AccelStepperT : public AccelStepper {
 	AccelStepperT(uint8_t step, uint8_t dir);
 	void runAsync(void);
 	void runSpeedAsync(void);
+	void runSpeedwithAccelerationAsync(void);
 	void runToPosition(void (*func)(void), volatile bool *keep_running);
 	void runToPosition(void (*func)(void)) { return runToPosition(func, NULL); };
 	void runToPosition(void) { return runToPosition(NULL, NULL); };
@@ -51,6 +52,7 @@ class AccelStepperT : public AccelStepper {
 	enum { T_STOP,
 		   T_RUN,
 		   T_RUNSPEED,
+		   T_RUNSPEEDACCEL,
 		   T_HOME_F,
 		   T_HOME_R
 	} _async_runtype;
