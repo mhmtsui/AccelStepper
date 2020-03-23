@@ -58,8 +58,8 @@ void __attribute__((USER_ISR)) timer_isr(void) {
 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
 			}
 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUNSPEEDACCEL) {
-			if (stepper_list[i]->targetSpeed() != 0.0) {
-				stepper_list[i]->runSpeedwithAcceleration();
+			//if (stepper_list[i]->targetSpeed() != 0.0) {
+			if (stepper_list[i]->runSpeedwithAcceleration()) {
 				cnt++;
 			} else {
 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;

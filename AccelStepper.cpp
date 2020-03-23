@@ -190,10 +190,14 @@ void AccelStepper::computeNewSpeedT()
 
     long stepsToStop = (long)((_speed * _speed) / (2.0 * _deceleration)); // Equation 16
 
-    if (speedTo == 0)
+    if (abs(speedTo) <= 1 || (abs(_cn - _c0) <= 1 && ((speedTo > 0 && _n < 0)|(speedTo < 0 && _n > 0))))
     {
         // We are at the target and its time to stop changing the speed
-        _n = 0;
+        if (_targetSpeed == 0.0){
+            _speed = 0.0;
+            _stepInterval = 0;
+            _n = 0;
+        }
 	    return;
     }
 
@@ -249,7 +253,7 @@ void AccelStepper::computeNewSpeedT()
     _speed = 1000000.0 / _cn;
     if (_direction == DIRECTION_CCW)
 	    _speed = -_speed;
-
+//
 #if 0
     Serial.println(_speed);
     Serial.println(_acceleration);
@@ -257,7 +261,7 @@ void AccelStepper::computeNewSpeedT()
     Serial.println(_c0);
     Serial.println(_n);
     Serial.println(_stepInterval);
-    Serial.println(distanceTo);
+    Serial.println(speedTo);
     Serial.println(stepsToStop);
     Serial.println("-----");
 #endif
