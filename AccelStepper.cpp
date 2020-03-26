@@ -190,7 +190,10 @@ void AccelStepper::computeNewSpeedT()
 
     long stepsToStop = (long)((_speed * _speed) / (2.0 * _deceleration)); // Equation 16
 
-    if (abs(speedTo) <= 1 || (abs(_cn - _c0) <= 1 && ((speedTo > 0 && _n < 0)|(speedTo < 0 && _n > 0))))
+    if (abs(speedTo) <= 1 || 
+        (abs(_cn - _c0) <= 1 && 
+            ((speedTo > 0 && _n < 0 && _direction == DIRECTION_CCW)|
+             (speedTo < 0 && _n > 0 && _direction == DIRECTION_CW))))
     {
         // We are at the target and its time to stop changing the speed
         if (_targetSpeed == 0.0){
