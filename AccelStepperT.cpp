@@ -1,7 +1,7 @@
 #include <cpudefs.h>
 #include "AccelStepperT.h"
 
-#ifdef defined (__PIC32MX3XX__)
+#if defined (__PIC32MX3XX__)
 	#define PR (uint16_t)(2500UL / TIMER_FREQ_KHZ)
 #elif defined (__PIC32MZXX__)
 	#define PR (uint16_t)(3125UL / TIMER_FREQ_KHZ)
