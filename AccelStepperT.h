@@ -19,7 +19,7 @@ typedef enum {
 } _async_hometype;
 
 class AccelStepperT : public AccelStepper {
-   private:
+   protected:
    	typedef struct {
 		uint8_t pin;
 		float toward_move;
@@ -32,6 +32,13 @@ class AccelStepperT : public AccelStepper {
 		// uint8_t prev2;
 		// uint8_t current;
 	} home_struct_t;
+	enum { T_STOP,
+		   T_RUN,
+		   T_RUNSPEED,
+		   T_RUNSPEEDACCEL,
+		   T_HOME_F,
+		   T_HOME_R
+	} _async_runtype;
    public:
 	AccelStepperT(uint8_t step, uint8_t dir);
 	void runAsync(void);
@@ -49,14 +56,6 @@ class AccelStepperT : public AccelStepper {
 	_async_homestate_t Homestatus();
 
    private:
-	enum { T_STOP,
-		   T_RUN,
-		   T_RUNSPEED,
-		   T_RUNSPEEDACCEL,
-		   T_HOME_F,
-		   T_HOME_R
-	} _async_runtype;
-
 	friend void __USER_ISR timer_isr(void);
 	void step(long step);
 
@@ -71,5 +70,11 @@ class AccelStepperT : public AccelStepper {
 };
 
 extern AccelStepperT *stepper_list[MAX_STEPPER_NUM];
+extern uint8_t stepper_list_num;
+extern bool timer_has_init;
+
+void timer_init(void);
+void timer_start(void);
+void timer_stop(void);
 
 #endif

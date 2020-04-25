@@ -10,9 +10,9 @@
 #endif
 
 AccelStepperT *stepper_list[MAX_STEPPER_NUM];
-static uint8_t stepper_list_num = 0;
+uint8_t stepper_list_num = 0;
 
-static bool timer_has_init = false;
+bool timer_has_init = false;
 static volatile bool timer_started = false;
 static volatile bool timer_needstart = false;
 
