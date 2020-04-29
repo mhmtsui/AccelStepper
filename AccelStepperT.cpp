@@ -180,7 +180,9 @@ void AccelStepperT::startHome(_async_hometype mode) {
 }
 
 uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
-	home_struct->current = ((((home_struct->current & 0x07) << 1) & 0x0E) | ((digitalRead(home_struct->pin)) & 0x01));
+	int s = ((home_struct->iopHome->port.reg & home_struct->bitHome) != 0)? 1: 0;
+	home_struct->current = ((((home_struct->current & 0x07) << 1) & 0x0E) | ((s) & 0x01));
+	//home_struct->current = ((((home_struct->current & 0x07) << 1) & 0x0E) | ((digitalRead(home_struct->pin)) & 0x01));
 	//Serial.println(home_struct->current);
 	if (home == HOME_START){
 		if (home_struct->invert == false){//active 1
@@ -282,6 +284,8 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 		if ((pin >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(pin)) == NOT_A_PIN)) {
 			return false;
 		}
+		HomeF.iopHome = (p32_ioport *)portRegisters(port);
+		HomeF.bitHome = digitalPinToBitMask(pin);
 		HomeF.pin = pin;
 		HomeF.toward_move = toward_move;
 		HomeF.leave_move = leave_move;
@@ -292,6 +296,8 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 		if ((pin >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(pin)) == NOT_A_PIN)) {
 			return false;
 		}
+		HomeR.iopHome = (p32_ioport *)portRegisters(port);
+		HomeR.bitHome = digitalPinToBitMask(pin);
 		HomeR.pin = pin;
 		HomeR.toward_move = toward_move;
 		HomeR.leave_move = leave_move;

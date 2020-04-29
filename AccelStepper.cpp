@@ -408,6 +408,16 @@ void AccelStepper::setDeceleration(float deceleration)
 	}
 }
 
+float AccelStepper::acceleration()
+{
+    return _acceleration;
+}
+
+float AccelStepper::deceleration()
+{
+    return _deceleration;
+}
+
 void AccelStepper::setSpeed(float speed)
 {
     if (speed == _speed)

@@ -418,6 +418,9 @@ public:
     void    setAcceleration(float acceleration);
     void    setDeceleration(float deceleration);
 
+    float   acceleration();
+    float   deceleration();
+
     /// Sets the desired constant speed for use with runSpeed().
     /// \param[in] speed The desired constant speed in steps per
     /// second. Positive is clockwise. Speeds of more than 1000 steps per

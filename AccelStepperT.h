@@ -21,6 +21,8 @@ typedef enum {
 class AccelStepperT : public AccelStepper {
    protected:
    	typedef struct {
+		p32_ioport *iopHome;
+		uint32_t bitHome;   
 		uint8_t pin;
 		float toward_move;
 		float leave_move; 
