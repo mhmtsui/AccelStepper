@@ -1,10 +1,10 @@
 #ifndef _ACCELSTEPPERT_
 #define _ACCELSTEPPERT_
 
+#include "../../robot.h"
 #include "AccelStepper.h"
 
-#define MAX_STEPPER_NUM 12
-#define TIMER_FREQ_KHZ (50)
+//#define MAX_STEPPER_NUM 12
 
 typedef enum {
 	HOME_START = 0,
@@ -18,8 +18,13 @@ typedef enum {
 	HOME_R
 } _async_hometype;
 
+typedef enum {
+	VMODE,
+	PMODE
+} _stpr_mode_t;
+
 class AccelStepperT : public AccelStepper {
-   protected:
+   public:
    	typedef struct {
 		p32_ioport *iopHome;
 		uint32_t bitHome;   
@@ -41,7 +46,7 @@ class AccelStepperT : public AccelStepper {
 		   T_HOME_F,
 		   T_HOME_R
 	} _async_runtype;
-   public:
+   //public:
 	AccelStepperT(uint8_t step, uint8_t dir);
 	void runAsync(void);
 	void runSpeedAsync(void);
@@ -54,9 +59,11 @@ class AccelStepperT : public AccelStepper {
 	void startHome(_async_hometype mode);
 	uint8_t runHome(home_struct_t * home_struct);
 	bool configHome(_async_hometype mode, uint8_t pin, float toward_move, float leave_move, bool invert, uint32_t position);
-
+	void setMode(_stpr_mode_t mode) {_mode = mode;};
+	bool isRunning();
 	_async_homestate_t Homestatus();
-
+	home_struct_t HomeF;
+	home_struct_t HomeR;
    private:
 	friend void __USER_ISR timer_isr(void);
 	void step(long step);
@@ -67,16 +74,17 @@ class AccelStepperT : public AccelStepper {
 	uint32_t bitDir;
 
 	_async_homestate_t home;//a flag for stepper homing process
-	home_struct_t HomeF;
-	home_struct_t HomeR;
+	_stpr_mode_t _mode;
 };
 
-extern AccelStepperT *stepper_list[MAX_STEPPER_NUM];
-extern uint8_t stepper_list_num;
-extern bool timer_has_init;
+//extern AccelStepperT *stepper_list[MAX_STEPPER_NUM];
+//extern uint8_t stepper_list_num;
+//extern bool timer_has_init;
 
-void timer_init(void);
-void timer_start(void);
-void timer_stop(void);
+static volatile bool timer_started = false;
+
+extern void timer_init(void);
+extern void timer_start(void);
+extern void timer_stop(void);
 
 #endif

@@ -1,123 +1,92 @@
 #include <cpudefs.h>
+#include <Streaming.h>
 #include "AccelStepperT.h"
+//#include "../SMC/SMC.h"
 
-#if defined (__PIC32MX3XX__)
-	#define PR (uint16_t)(2500UL / TIMER_FREQ_KHZ)
-#elif defined (__PIC32MZXX__)
-	#define PR (uint16_t)(3125UL / TIMER_FREQ_KHZ)
-#else
-	#define PR (uint16_t)(2500UL / TIMER_FREQ_KHZ)
-#endif
+//AccelStepperT *stepper_list[MAX_STEPPER_NUM];
+//uint8_t stepper_list_num = 0;
 
-AccelStepperT *stepper_list[MAX_STEPPER_NUM];
-uint8_t stepper_list_num = 0;
+//bool timer_has_init = false;
+//static volatile bool timer_started = false;
+//static volatile bool timer_needstart = false;
 
-bool timer_has_init = false;
-static volatile bool timer_started = false;
-static volatile bool timer_needstart = false;
-
-void timer_start(void) {
-	timer_needstart = true;
-	if (!timer_started) {
-		setIntEnable(_TIMER_4_IRQ);
-		T4CONbits.TON = 1;
-		timer_started = true;
-	}
-}
-
-void timer_stop(void) {
-	//clearIntEnable(_TIMER_4_IRQ);
-	IEC0CLR = _IEC0_T4IE_MASK;
-	T4CONbits.TON = 0;
-	timer_started = false;
-}
-
-#if defined (__PIC32MX3XX__)
-void __attribute__((USER_ISR)) timer_isr(void) {
-#elif defined (__PIC32MZXX__)
-void __attribute__((nomips16,at_vector(_TIMER_4_VECTOR),interrupt(IPL4SRS))) timer_isr(void) {
-#else
-void __attribute__((USER_ISR)) timer_isr(void) {
-#endif
-	IFS0CLR = _IFS0_T4IF_MASK;
-	// clearIntFlag(_TIMER_4_IRQ);
-	// _LATB14 = 1;
-	uint8_t cnt = 0;
-	for (int i = 0; i < stepper_list_num; i++) {
-		if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUN) {
-			if (stepper_list[i]->run()) {
-				cnt++;
-			} else {
-				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-			}
-		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUNSPEED) {
-			if (stepper_list[i]->speed() != 0.0) {
-				stepper_list[i]->runSpeed();
-				cnt++;
-			} else {
-				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-			}
-		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUNSPEEDACCEL) {
-			//if (stepper_list[i]->targetSpeed() != 0.0) {
-			if (stepper_list[i]->runSpeedwithAcceleration()) {
-				cnt++;
-			} else {
-				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-			}
-		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_F) {
-			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeF))) {
-				cnt++;
-			} else {
-				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-			}
-		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_R) {
-			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeR))) {
-				cnt++;
-			} else {
-				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-			}
-		} 
-	}
-	if (cnt == 0 && !(timer_needstart)) {
-		// timer_stop();
-		timer_started = false;
-		IEC0CLR = _IEC0_T4IE_MASK;
-		T4CONbits.TON = 0;
-	}
-	timer_needstart = false;
-	// _LATB14 = 0;
-}
-
-void timer_init(void) {
-	T4CONbits.TCKPS = 5;
-	setIntVector(_TIMER_4_VECTOR, timer_isr);
-	setIntPriority(_TIMER_4_VECTOR, 7, 1);
-	clearIntFlag(_TIMER_4_IRQ);
-	clearIntEnable(_TIMER_4_IRQ);
-	PR4 = PR;
-}
+// #if defined (__PIC32MX3XX__)
+// void __attribute__((USER_ISR)) timer_isr(void) {
+// #elif defined (__PIC32MZXX__)
+// void __attribute__((nomips16,at_vector(_TIMER_4_VECTOR),interrupt(IPL4SRS))) timer_isr(void) {
+// #else
+// void __attribute__((USER_ISR)) timer_isr(void) {
+// #endif
+// 	IFS0CLR = _IFS0_T4IF_MASK;
+// 	// clearIntFlag(_TIMER_4_IRQ);
+// 	// _LATB14 = 1;
+// 	uint8_t cnt = 0;
+// 	for (int i = 0; i < stepper_list_num; i++) {
+// 		if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUN) {
+// 			if (stepper_list[i]->run()) {
+// 				cnt++;
+// 			} else {
+// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
+// 			}
+// 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUNSPEED) {
+// 			if (stepper_list[i]->speed() != 0.0) {
+// 				stepper_list[i]->runSpeed();
+// 				cnt++;
+// 			} else {
+// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
+// 			}
+// 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUNSPEEDACCEL) {
+// 			//if (stepper_list[i]->targetSpeed() != 0.0) {
+// 			if (stepper_list[i]->runSpeedwithAcceleration()) {
+// 				cnt++;
+// 			} else {
+// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
+// 			}
+// 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_F) {
+// 			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeF))) {
+// 				cnt++;
+// 			} else {
+// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
+// 			}
+// 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_R) {
+// 			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeR))) {
+// 				cnt++;
+// 			} else {
+// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
+// 			}
+// 		} 
+// 	}
+// 	if (cnt == 0 && !(timer_needstart)) {
+// 		// timer_stop();
+// 		timer_started = false;
+// 		IEC0CLR = _IEC0_T4IE_MASK;
+// 		T4CONbits.TON = 0;
+// 	}
+// 	timer_needstart = false;
+// 	// _LATB14 = 0;
+// }
 
 AccelStepperT::AccelStepperT(uint8_t step, uint8_t dir) : AccelStepper(AccelStepper::DRIVER, step, dir, 255, 255) {
-	if (stepper_list_num < MAX_STEPPER_NUM) {
-		uint8_t port;
-		if ((step >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(step)) == NOT_A_PIN)) {
-			return;
-		}
-		iopStep = (p32_ioport *)portRegisters(port);
-		bitStep = digitalPinToBitMask(step);
-
-		if ((dir >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(dir)) == NOT_A_PIN)) {
-			return;
-		}
-		iopDir = (p32_ioport *)portRegisters(port);
-		bitDir = digitalPinToBitMask(dir);
-
-		stepper_list[stepper_list_num++] = this;
-		if (!timer_has_init) {
-			timer_init();
-			timer_has_init = true;
-		}
+	//if (stepper_list_num < MAX_STEPPER_NUM) {
+	uint8_t port;
+	if ((step >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(step)) == NOT_A_PIN)) {
+		return;
 	}
+	iopStep = (p32_ioport *)portRegisters(port);
+	bitStep = digitalPinToBitMask(step);
+
+	if ((dir >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(dir)) == NOT_A_PIN)) {
+		return;
+	}
+	iopDir = (p32_ioport *)portRegisters(port);
+	bitDir = digitalPinToBitMask(dir);
+
+	//	stepper_list[stepper_list_num++] = this;
+	//	if (!timer_has_init) {
+	//		timer_init();
+	//		timer_has_init = true;
+	//	}
+	//}
 }
 
 void AccelStepperT::runAsync(void) {
@@ -152,6 +121,7 @@ bool AccelStepperT::isTimerActive(void) {
 
 void AccelStepperT::step(long step) {
 	(void)step;
+	//Serial << "ACCEL Step" << endl;
 	if (_direction) {
 		iopDir->lat.set = bitDir;
 	} else {
@@ -309,4 +279,12 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 
 _async_homestate_t AccelStepperT::Homestatus(){
 	return home;
+}
+
+bool AccelStepperT::isRunning(){
+	if (_mode == VMODE){
+		return !(speed() == 0.0);
+	}else if (_mode == PMODE){
+		return AccelStepper::isRunning();
+	}
 }
