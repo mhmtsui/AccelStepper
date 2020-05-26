@@ -617,6 +617,9 @@ protected:
     /// Protected because some peoples subclasses need it to be so
     boolean _direction; // 1 == CW
     boolean _prev_direction;
+
+        /// Whether the _pins is inverted or not
+    uint8_t        _pinInverted[4];
         
 private:
     /// Number of pins on the stepper motor. Permits 2 or 4. 2 pins is a
@@ -627,8 +630,7 @@ private:
     /// stepper motor or driver
     uint8_t        _pin[4];
 
-    /// Whether the _pins is inverted or not
-    uint8_t        _pinInverted[4];
+
 
     /// The current absolution position in steps.
     long           _currentPos;    // Steps

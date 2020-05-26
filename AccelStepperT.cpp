@@ -122,7 +122,7 @@ bool AccelStepperT::isTimerActive(void) {
 void AccelStepperT::step(long step) {
 	(void)step;
 	//Serial << "ACCEL Step" << endl;
-	if (_direction) {
+	if (_direction ^ _pinInverted[1]) {
 		iopDir->lat.set = bitDir;
 	} else {
 		iopDir->lat.clr = bitDir;
@@ -200,7 +200,9 @@ uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 			}else{
 				setSpeed(0.0f);
 				_async_runtype = T_STOP;
+				Serial << "setCurrentPosition" << home_struct->position << ":" ;
 				setCurrentPosition(home_struct->position);
+				Serial << currentPosition() << endl;
 				home = HOME_DONE;
 			}
 		}else if (home_struct->invert == true){//active 0
@@ -261,6 +263,7 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 		HomeF.leave_move = leave_move;
 		HomeF.invert = invert;
 		HomeF.position = position;
+		Serial << "HomeF Position" << HomeF.position << endl;
 	}else if (mode == HOME_R){//Home R
 		uint8_t port;
 		if ((pin >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(pin)) == NOT_A_PIN)) {
@@ -273,6 +276,7 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 		HomeR.leave_move = leave_move;
 		HomeR.invert = invert;
 		HomeR.position = position;
+		Serial << "HomeR Position" << HomeR.position <<endl;
 	}
 	return true;
 }
