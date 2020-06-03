@@ -149,9 +149,12 @@ void AccelStepperT::startHome(_async_hometype mode) {
 	}
 }
 
+#define DEBOUNCE_CYCLE (8)
+//#define MASK_1 (0xFE)
+#define DEBOUNCE_BITMASK ((1<<DEBOUNCE_CYCLE)-1)
 uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 	int s = ((home_struct->iopHome->port.reg & home_struct->bitHome) != 0)? 1: 0;
-	home_struct->current = ((((home_struct->current & 0x07) << 1) & 0x0E) | ((s) & 0x01));
+	home_struct->current = ((((home_struct->current & (DEBOUNCE_BITMASK)) << 1) & (DEBOUNCE_BITMASK << 1)) | ((s) & 0x01));
 	//home_struct->current = ((((home_struct->current & 0x07) << 1) & 0x0E) | ((digitalRead(home_struct->pin)) & 0x01));
 	//Serial.println(home_struct->current);
 	if (home == HOME_START){
@@ -190,7 +193,7 @@ uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 		}
 	}else if (home == HOME_TOWARD){
 		if (home_struct->invert == false){//active 1
-			if (((home_struct->current) & 0x0F) != 0x0F){
+			if (((home_struct->current) & (DEBOUNCE_BITMASK)) != (DEBOUNCE_BITMASK)){
 				home = HOME_TOWARD;
 				if (speed() != home_struct->toward_move){
 					setSpeed(home_struct->toward_move);
@@ -206,7 +209,7 @@ uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 				home = HOME_DONE;
 			}
 		}else if (home_struct->invert == true){//active 0
-			if ((home_struct->current) & 0x0F){
+			if ((home_struct->current) & (DEBOUNCE_BITMASK)){
 				home = HOME_TOWARD;
 				if (speed() != home_struct->toward_move){
 					setSpeed(home_struct->toward_move);
@@ -222,7 +225,7 @@ uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 		}
 	}else if (home == HOME_AWAY){
 		if (home_struct->invert == false){//active 1
-			if (((home_struct->current) & 0x0F) != 0x00){
+			if (((home_struct->current) & (DEBOUNCE_BITMASK)) != 0x00){
 				home = HOME_AWAY;
 				if (speed() != home_struct->leave_move){
 					setSpeed(home_struct->leave_move);
@@ -234,7 +237,7 @@ uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 				return 1;
 			}
 		}else if (home_struct->invert == true){//active 0
-			if (((home_struct->current) & 0x0F) != 0x0F){
+			if (((home_struct->current) & (DEBOUNCE_BITMASK)) != (DEBOUNCE_BITMASK)){
 				home = HOME_AWAY;
 				if (speed() != home_struct->leave_move){
 					setSpeed(home_struct->leave_move);

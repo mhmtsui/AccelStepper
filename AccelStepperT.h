@@ -33,7 +33,7 @@ class AccelStepperT : public AccelStepper {
 		float leave_move; 
 		bool invert;
 		uint32_t position;
-		uint8_t current;
+		uint16_t current;
 		// uint8_t prev;
 		// uint8_t prev1;
 		// uint8_t prev2;
