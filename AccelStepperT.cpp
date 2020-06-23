@@ -1,73 +1,10 @@
 #include <cpudefs.h>
 #include <Streaming.h>
 #include "AccelStepperT.h"
-//#include "../SMC/SMC.h"
 
-//AccelStepperT *stepper_list[MAX_STEPPER_NUM];
-//uint8_t stepper_list_num = 0;
-
-//bool timer_has_init = false;
-//static volatile bool timer_started = false;
-//static volatile bool timer_needstart = false;
-
-// #if defined (__PIC32MX3XX__)
-// void __attribute__((USER_ISR)) timer_isr(void) {
-// #elif defined (__PIC32MZXX__)
-// void __attribute__((nomips16,at_vector(_TIMER_4_VECTOR),interrupt(IPL4SRS))) timer_isr(void) {
-// #else
-// void __attribute__((USER_ISR)) timer_isr(void) {
-// #endif
-// 	IFS0CLR = _IFS0_T4IF_MASK;
-// 	// clearIntFlag(_TIMER_4_IRQ);
-// 	// _LATB14 = 1;
-// 	uint8_t cnt = 0;
-// 	for (int i = 0; i < stepper_list_num; i++) {
-// 		if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUN) {
-// 			if (stepper_list[i]->run()) {
-// 				cnt++;
-// 			} else {
-// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-// 			}
-// 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUNSPEED) {
-// 			if (stepper_list[i]->speed() != 0.0) {
-// 				stepper_list[i]->runSpeed();
-// 				cnt++;
-// 			} else {
-// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-// 			}
-// 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_RUNSPEEDACCEL) {
-// 			//if (stepper_list[i]->targetSpeed() != 0.0) {
-// 			if (stepper_list[i]->runSpeedwithAcceleration()) {
-// 				cnt++;
-// 			} else {
-// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-// 			}
-// 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_F) {
-// 			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeF))) {
-// 				cnt++;
-// 			} else {
-// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-// 			}
-// 		} else if (stepper_list[i]->_async_runtype == AccelStepperT::T_HOME_R) {
-// 			if (stepper_list[i]->runHome(&(stepper_list[i]->HomeR))) {
-// 				cnt++;
-// 			} else {
-// 				stepper_list[i]->_async_runtype = AccelStepperT::T_STOP;
-// 			}
-// 		} 
-// 	}
-// 	if (cnt == 0 && !(timer_needstart)) {
-// 		// timer_stop();
-// 		timer_started = false;
-// 		IEC0CLR = _IEC0_T4IE_MASK;
-// 		T4CONbits.TON = 0;
-// 	}
-// 	timer_needstart = false;
-// 	// _LATB14 = 0;
-// }
+//#define HOME_DEBUG
 
 AccelStepperT::AccelStepperT(uint8_t step, uint8_t dir) : AccelStepper(AccelStepper::DRIVER, step, dir, 255, 255) {
-	//if (stepper_list_num < MAX_STEPPER_NUM) {
 	uint8_t port;
 	if ((step >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(step)) == NOT_A_PIN)) {
 		return;
@@ -81,12 +18,6 @@ AccelStepperT::AccelStepperT(uint8_t step, uint8_t dir) : AccelStepper(AccelStep
 	iopDir = (p32_ioport *)portRegisters(port);
 	bitDir = digitalPinToBitMask(dir);
 
-	//	stepper_list[stepper_list_num++] = this;
-	//	if (!timer_has_init) {
-	//		timer_init();
-	//		timer_has_init = true;
-	//	}
-	//}
 }
 
 void AccelStepperT::runAsync(void) {
@@ -121,13 +52,11 @@ bool AccelStepperT::isTimerActive(void) {
 
 void AccelStepperT::step(long step) {
 	(void)step;
-	//Serial << "ACCEL Step" << endl;
 	if (_direction ^ _pinInverted[1]) {
 		iopDir->lat.set = bitDir;
 	} else {
 		iopDir->lat.clr = bitDir;
 	}
-	asm volatile("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n ");
 	if (_prev_direction != _direction){
 		delayMicroseconds(5);
 	}
@@ -149,9 +78,9 @@ void AccelStepperT::startHome(_async_hometype mode) {
 	}
 }
 
-#define DEBOUNCE_CYCLE (8)
+#define DEBOUNCE_CYCLE (14)
 //#define MASK_1 (0xFE)
-#define DEBOUNCE_BITMASK ((1<<DEBOUNCE_CYCLE)-1)
+#define DEBOUNCE_BITMASK ((uint32_t) ((1<<DEBOUNCE_CYCLE)-1))
 uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 	int s = ((home_struct->iopHome->port.reg & home_struct->bitHome) != 0)? 1: 0;
 	home_struct->current = ((((home_struct->current & (DEBOUNCE_BITMASK)) << 1) & (DEBOUNCE_BITMASK << 1)) | ((s) & 0x01));
@@ -203,7 +132,9 @@ uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 			}else{
 				setSpeed(0.0f);
 				_async_runtype = T_STOP;
+#ifdef HOME_DEBUG
 				Serial << "setCurrentPosition" << home_struct->position << ":" ;
+#endif
 				setCurrentPosition(home_struct->position);
 				Serial << currentPosition() << endl;
 				home = HOME_DONE;
@@ -266,7 +197,9 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 		HomeF.leave_move = leave_move;
 		HomeF.invert = invert;
 		HomeF.position = position;
+#ifdef HOME_DEBUG
 		Serial << "HomeF Position" << HomeF.position << endl;
+#endif
 	}else if (mode == HOME_R){//Home R
 		uint8_t port;
 		if ((pin >= NUM_DIGITAL_PINS) || ((port = digitalPinToPort(pin)) == NOT_A_PIN)) {
@@ -279,7 +212,9 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 		HomeR.leave_move = leave_move;
 		HomeR.invert = invert;
 		HomeR.position = position;
+#ifdef HOME_DEBUG
 		Serial << "HomeR Position" << HomeR.position <<endl;
+#endif
 	}
 	return true;
 }
