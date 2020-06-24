@@ -2,7 +2,7 @@
 #include <Streaming.h>
 #include "AccelStepperT.h"
 
-//#define HOME_DEBUG
+#define HOME_DEBUG
 
 AccelStepperT::AccelStepperT(uint8_t step, uint8_t dir) : AccelStepper(AccelStepper::DRIVER, step, dir, 255, 255) {
 	uint8_t port;
@@ -83,7 +83,7 @@ void AccelStepperT::startHome(_async_hometype mode) {
 #define DEBOUNCE_BITMASK ((uint32_t) ((1<<DEBOUNCE_CYCLE)-1))
 uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 	int s = ((home_struct->iopHome->port.reg & home_struct->bitHome) != 0)? 1: 0;
-	home_struct->current = ((((home_struct->current & (DEBOUNCE_BITMASK)) << 1) & (DEBOUNCE_BITMASK << 1)) | ((s) & 0x01));
+	home_struct->current = ((((home_struct->current) << 1) & (0xFFFFFFFE)) | ((s) & 0x01));
 	//home_struct->current = ((((home_struct->current & 0x07) << 1) & 0x0E) | ((digitalRead(home_struct->pin)) & 0x01));
 	//Serial.println(home_struct->current);
 	if (home == HOME_START){
