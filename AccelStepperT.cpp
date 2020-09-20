@@ -85,7 +85,7 @@ uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 	int s = ((home_struct->iopHome->port.reg & home_struct->bitHome) != 0)? 1: 0;
 	home_struct->current = ((((home_struct->current) << 1) & (0xFFFFFFFE)) | ((s) & 0x01));
 	//home_struct->current = ((((home_struct->current & 0x07) << 1) & 0x0E) | ((digitalRead(home_struct->pin)) & 0x01));
-	//Serial.println(home_struct->current);
+	//LOG.println(home_struct->current);
 	if (home == HOME_START){
 		if (home_struct->invert == false){//active 1
 			if (!(home_struct->current & 0x01)){
@@ -133,10 +133,10 @@ uint8_t AccelStepperT::runHome(home_struct_t * home_struct) {
 				setSpeed(0.0f);
 				_async_runtype = T_STOP;
 #ifdef HOME_DEBUG
-				Serial << "setCurrentPosition" << home_struct->position << ":" ;
+				LOG << "setCurrentPosition" << home_struct->position << ":" ;
 #endif
 				setCurrentPosition(home_struct->position);
-				Serial << currentPosition() << endl;
+				LOG << currentPosition() << endl;
 				home = HOME_DONE;
 			}
 		}else if (home_struct->invert == true){//active 0
@@ -198,7 +198,7 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 		HomeF.invert = invert;
 		HomeF.position = position;
 #ifdef HOME_DEBUG
-		Serial << "HomeF Position" << HomeF.position << endl;
+		LOG << "HomeF Position" << HomeF.position << endl;
 #endif
 	}else if (mode == HOME_R){//Home R
 		uint8_t port;
@@ -213,7 +213,7 @@ bool AccelStepperT::configHome(_async_hometype mode, uint8_t pin, float toward_m
 		HomeR.invert = invert;
 		HomeR.position = position;
 #ifdef HOME_DEBUG
-		Serial << "HomeR Position" << HomeR.position <<endl;
+		LOG << "HomeR Position" << HomeR.position <<endl;
 #endif
 	}
 	return true;

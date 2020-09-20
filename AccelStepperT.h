@@ -4,6 +4,15 @@
 #include "../../robot.h"
 #include "AccelStepper.h"
 
+#define MQTT_LOG
+
+#ifdef MQTT_LOG
+#include "../MQTT_app/log.h"
+#define LOG logger
+#else
+#define LOG Serial
+#endif
+
 //#define MAX_STEPPER_NUM 12
 
 typedef enum {
