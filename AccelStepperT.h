@@ -4,7 +4,7 @@
 #include "../../robot.h"
 #include "AccelStepper.h"
 
-#define MQTT_LOG
+//#define MQTT_LOG
 
 #ifdef MQTT_LOG
 #include "../MQTT_app/log.h"
