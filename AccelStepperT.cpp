@@ -223,6 +223,10 @@ _async_homestate_t AccelStepperT::Homestatus(){
 	return home;
 }
 
+void AccelStepperT::resetHomestatus(){
+	home = HOME_START;
+}
+
 bool AccelStepperT::isRunning(){
 	if (_mode == VMODE){
 		return !(speed() == 0.0);

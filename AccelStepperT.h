@@ -63,7 +63,10 @@ class AccelStepperT : public AccelStepper {
 	void runToPosition(void (*func)(void), volatile bool *keep_running);
 	void runToPosition(void (*func)(void)) { return runToPosition(func, NULL); };
 	void runToPosition(void) { return runToPosition(NULL, NULL); };
-	void stopAsync(void) { _async_runtype = T_STOP; };
+	void stopAsync(void) { 
+		//_async_runtype = T_STOP;
+		stop(); 
+	}
 	static bool isTimerActive(void);
 	void startHome(_async_hometype mode);
 	uint8_t runHome(home_struct_t * home_struct);
@@ -71,6 +74,7 @@ class AccelStepperT : public AccelStepper {
 	void setMode(_stpr_mode_t mode) {_mode = mode;};
 	bool isRunning();
 	_async_homestate_t Homestatus();
+	void resetHomestatus();
 	home_struct_t HomeF;
 	home_struct_t HomeR;
    private:
